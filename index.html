@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Medmax Technologies Col - Plataforma de gestión y herramientas.">
+  <meta name="theme-color" content="#101c36">
+  <title>Medmax Technologies Col</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" data-page="home" aria-label="Medmax inicio">
+        <span class="brand-mark">M</span>
+        <span><strong>MEDMAX</strong><small>TECHNOLOGIES COL</small></span>
+      </a>
+      <div class="side-label">PLATAFORMA</div>
+      <nav class="main-nav">
+        <button class="nav-item active" data-page="home"><span>⌂</span> Inicio</button>
+        <button class="nav-item" data-page="tools"><span>▦</span> Herramientas</button>
+      </nav>
+      <div class="side-label section-label">EMPRESAS</div>
+      <nav id="company-nav" class="company-nav"></nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-page="admin"><span>⚙</span> Administración</button>
+        <div class="sidebar-note">Tu centro de herramientas de trabajo</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menú">☰</button>
+        <div class="breadcrumb" id="breadcrumb">Inicio</div>
+        <div class="top-actions"><span class="status-dot"></span><span>Portal personal</span></div>
+      </header>
+      <section class="content" id="content" aria-live="polite"></section>
+      <footer>MEDMAX TECHNOLOGIES COL <span>•</span> Plataforma de gestión y herramientas</footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
