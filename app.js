@@ -2,14 +2,23 @@ const DEFAULT_DATA = {
   companies: [
     {id:"emssanar",name:"Emssanar",initials:"EM",description:"Herramientas y procesos de Emssanar",categories:["Radicación","Cuentas por Cobrar","Recobros","RIPS / MIPRES"]},
     {id:"sos",name:"SOS",initials:"SOS",description:"Herramientas y procesos de SOS",categories:["General"]},
-    {id:"comfenalco",name:"Comfenalco",initials:"CF",description:"Herramientas y procesos de Comfenalco",categories:["General"]},
-    {id:"cruz-verde",name:"Cruz Verde",initials:"CV",description:"Herramientas y procesos de Cruz Verde",categories:["General"]}
+    {id:"comfenalco",name:"Comfenalco",initials:"CF",description:"Herramientas y procesos de Comfenalco",categories:["Gestión de archivos"]},
+    {id:"cruz-verde",name:"Cruz Verde",initials:"CV",description:"Herramientas y procesos de Cruz Verde",categories:["General"]},
+    {id:"global",name:"Global",initials:"GL",description:"Herramientas de uso general",categories:["Gestión de archivos"]}
   ],
-  tools: []
+  tools: [
+    {id:"comfenalco-comprimir-subcarpetas",companyId:"comfenalco",name:"Comprimir subcarpetas",category:"Gestión de archivos",description:"Crea un ZIP por cada subcarpeta, nombrado según el XML encontrado dentro de ella.",url:"./herramientas/comfenalco/comprimir.html",download:""},
+    {id:"global-copiar-facturas-prefijo",companyId:"global",name:"Copiar carpetas de facturas por prefijo",category:"Gestión de archivos",description:"Lee códigos de un CSV, busca carpetas por prefijo y copia las coincidencias a una carpeta de destino.",url:"./herramientas/global/copiar_facturas.html",download:""}
+  ]
 };
 let data;
-try { data = JSON.parse(localStorage.getItem("medmax-data")) || structuredClone(DEFAULT_DATA); }
-catch { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+try {
+  data = JSON.parse(localStorage.getItem("medmax-data")) || JSON.parse(JSON.stringify(DEFAULT_DATA));
+  DEFAULT_DATA.companies.forEach(c => { if (!data.companies.some(x => x.id === c.id)) data.companies.push(c); });
+  DEFAULT_DATA.tools.forEach(t => { if (!data.tools.some(x => x.id === t.id)) data.tools.push(t); });
+  data.companies.forEach(c => { if (!Array.isArray(c.categories) || !c.categories.length) c.categories=["General"]; });
+  save();
+} catch { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
 let currentPage="home", currentCompany=null, currentCategory="Todas", searchTerm="";
 const content=document.getElementById("content");
 const companyNav=document.getElementById("company-nav");

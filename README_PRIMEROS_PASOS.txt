@@ -86,3 +86,31 @@ RECOMENDACIÓN
 Primero publica y prueba el portal vacío con datos ficticios. Después incorpora
 una herramienta sencilla de prueba. No subas programas ni archivos de trabajo
 confidenciales a un repositorio público.
+
+---------------------------------------------
+ACTUALIZACION V1.1 - HERRAMIENTAS PYTHON
+---------------------------------------------
+Se incorporan:
+- Comfenalco > Gestión de archivos > Comprimir subcarpetas.
+- Global > Gestión de archivos > Copiar carpetas de facturas por prefijo.
+
+La lógica se adapta del archivo Python "herramientas_gui (3).py".
+Las herramientas web trabajan localmente en el navegador y requieren Chrome o Edge
+de escritorio con HTTPS y permisos de acceso a las carpetas seleccionadas.
+
+INSTALACION:
+1. Descomprime este ZIP.
+2. Sube el contenido al repositorio medmax-technologies-col.
+3. Confirma con Commit changes.
+4. Espera la actualización de GitHub Pages.
+5. Entra a Medmax > Herramientas y prueba las dos nuevas opciones.
+
+RECOMENDACION:
+Primero prueba con COPIAS de carpetas y un CSV de prueba. No uses la carpeta
+productiva hasta verificar que los resultados coinciden con el Python original.
+
+NOTA:
+La versión web no ejecuta Python dentro de GitHub Pages. Convierte la operación
+de archivos a JavaScript en el navegador. Si una herramienta futura depende de
+librerías Python que no puedan trasladarse al navegador, se evaluará una
+arquitectura con backend.
