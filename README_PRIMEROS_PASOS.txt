@@ -125,3 +125,21 @@ factura (igual que el Python original), muestra avance real y conserva modo de p
 Comfenalco incorpora avance por subcarpeta y mejor registro de progreso.
 
 IMPORTANTE: pruebe primero Global con "Solo listar coincidencias; no copiar".
+
+
+---------------------------------------------
+V1.2.1 - CORRECCION GLOBAL
+---------------------------------------------
+Se corrigió un error JavaScript en la función de búsqueda optimizada:
+scanLevel utilizaba maxDepth sin recibirlo como parámetro.
+
+La versión V1.2.1 pasa maxDepth correctamente a scanLevel.
+También conserva el recorrido por niveles sin reiniciar desde la raíz.
+
+PRUEBA RECOMENDADA:
+- Prefijo: FFP
+- CSV: Libro1.csv
+- Profundidad: 6
+- Modo de prueba: ACTIVADO
+
+Primero verificar las coincidencias sin copiar.

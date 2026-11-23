@@ -17,7 +17,7 @@ async function copyTree(src,dst){
   }
 }
 
-async function scanLevel(dir,level,regex,numbers,found,nextQueue){
+async function scanLevel(dir,level,regex,numbers,found,nextQueue,maxDepth){
   let revisadas=0;
   for await(const [name,h] of dir.entries()){
     if(stop) break;
@@ -50,7 +50,7 @@ async function scanAll(root,regex,numbers,maxDepth){
     // No se vuelve a recorrer desde la raíz, a diferencia de la versión anterior.
     for(const item of queue){
       if(stop) break;
-      const n=await scanLevel(item.handle,item.level,regex,numbers,found,next);
+      const n=await scanLevel(item.handle,item.level,regex,numbers,found,next,maxDepth);
       revisadasNivel+=n;
       if(found.size===numbers.size) break;
     }
@@ -88,6 +88,7 @@ runBtn.onclick=async()=>{
     log(`Códigos únicos: ${codes.length}`);
     log(`Profundidad máxima: ${maxDepth}`);
     log('Iniciando búsqueda optimizada…');
+    log('La carpeta de origen se recorrerá una sola vez por nivel.');
     const result=await scanAll(source,regex,numberMap,maxDepth);
     const found=result.found;
     if(!dry.checked && found.size){
