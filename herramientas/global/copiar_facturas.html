@@ -2,7 +2,130 @@
 const $=id=>document.getElementById(id);let source=null,dest=null,busy=false,stop=false;function log(s){$("log").textContent+="\n"+s;$("log").scrollTop=$("log").scrollHeight}function supported(){return location.protocol==="https:"&&"showDirectoryPicker"in window}function update(){$("run").disabled=!source||!$("prefix").value.trim()||!$("csv").files.length||(!$('dry').checked&&!dest)||busy||!supported()}
 $("pickSource").onclick=async()=>{try{source=await showDirectoryPicker({mode:"read"});$("sourceName").textContent=source.name;update()}catch(e){if(e.name!=="AbortError")alert(e.message)}};$("pickDest").onclick=async()=>{try{dest=await showDirectoryPicker({mode:"readwrite"});$("destName").textContent=dest.name;update()}catch(e){if(e.name!=="AbortError")alert(e.message)}};$("prefix").oninput=update;$("csv").onchange=update;$("dry").onchange=update;$("cancel").onclick=()=>stop=true;
 function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function pattern(p){return new RegExp(esc(p)+"[A-Za-z]*[\\s\\-_]*(\\d+)","i")}function csvCells(text){let rows=[],row=[],cell="",q=false;for(let i=0;i<text.length;i++){let c=text[i];if(c==='"'){if(q&&text[i+1]==='"'){cell+='"';i++}else q=!q}else if(c===','&&!q){row.push(cell);cell=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell=''}else cell+=c}row.push(cell);if(row.some(x=>x.trim()))rows.push(row);return rows.flat()}
-async function copyTree(src,dst){for await(const[name,h]of src.entries()){if(stop)throw new Error("Proceso detenido");if(h.kind==='directory'){const d=await dst.getDirectoryHandle(name,{create:true});await copyTree(h,d)}else{const f=await h.getFile();const t=await dst.getFileHandle(name,{create:true});const w=await t.createWritable();await w.write(f);await w.close()}}}
-async function* levels(dir,level,max){if(stop||level>max)return;for await(const[name,h]of dir.entries())if(h.kind==='directory'){yield{name,h,level};if(level<max)yield*levels(h,level+1,max)}}
-$("run").onclick=async()=>{busy=true;stop=false;update();$("cancel").disabled=false;$("log").textContent="Leyendo CSV…";let found=new Map(),err=0,copied=0;try{const pref=$("prefix").value.trim();if(!/^[A-Za-z0-9]+$/.test(pref))throw new Error("El prefijo solo puede contener letras y números.");const p=pattern(pref);const cells=csvCells(await $("csv").files[0].text());const nums=new Set();for(const c of cells){let ms=[...c.matchAll(new RegExp(p.source,"gi"))].map(m=>m[1]);if(!ms.length&&/^\d{5,}$/.test(c.trim()))ms=[c.trim()];ms.forEach(n=>nums.add(n))}const codes=[...nums].map(n=>`${pref}-${n}`);if(!codes.length)throw new Error("El CSV no contiene códigos compatibles con el prefijo indicado.");const map=new Map(codes.map(c=>[c.replace(/\D/g,""),c]));log(`Códigos únicos: ${codes.length}`);let reviewed=0,max=Number($("depth").value)||6;for(let level=1;level<=max&&!stop;level++){for await(const item of levels(source,0,level-1)){if(item.level!==level)continue;reviewed++;const m=p.exec(item.name);if(m&&map.has(m[1])){const c=map.get(m[1]);if(!found.has(c))found.set(c,[]);found.get(c).push(item);log(`[OK] ${c} -> ${item.name}`)}}$("status").textContent=`Nivel ${level}: ${reviewed} carpetas revisadas; ${found.size}/${codes.length} encontradas.`;$("bar").style.width=(level/max*100)+"%";if(found.size===codes.length)break}if(!$("dry").checked&&!stop){for(const[code,items]of found){for(let i=0;i<items.length;i++){if(stop)break;try{let name=items[i].name+(items.length>1?"_"+(i+1):"");let target=await dest.getDirectoryHandle(name,{create:true});await copyTree(items[i].h,target);copied++;log(`[COPIADA] ${code} -> ${name}`)}catch(e){err++;log(`[ERROR] ${code}: ${e.message}`)}}}}const missing=codes.filter(c=>!found.has(c));log(`\nResumen: ${found.size}/${codes.length} códigos encontrados | carpetas copiadas: ${copied} | errores: ${err}`);if(missing.length)log("No encontradas: "+missing.join(", "));$("bar").style.width="100%";$("status").textContent=stop?"Proceso detenido.":"Proceso terminado."}catch(e){log("[ERROR] "+e.message);$("status").textContent="Error"}finally{busy=false;$("cancel").disabled=true;update()}};if(!supported())$("status").textContent="Abre Medmax mediante HTTPS en Chrome o Edge actualizado.";
+async function copyTree(src,dst){
+  for await(const [name,h] of src.entries()){
+    if(stop) throw new Error("Proceso detenido");
+    if(h.kind==='directory'){
+      const d=await dst.getDirectoryHandle(name,{create:true});
+      await copyTree(h,d);
+    }else{
+      const f=await h.getFile();
+      const t=await dst.getFileHandle(name,{create:true});
+      const w=await t.createWritable();
+      await w.write(f); await w.close();
+    }
+  }
+}
+
+async function scanLevel(dir,level,regex,numbers,found,nextQueue){
+  let revisadas=0;
+  for await(const [name,h] of dir.entries()){
+    if(stop) break;
+    if(h.kind!=='directory') continue;
+    revisadas++;
+    const m=regex.exec(name);
+    if(m && numbers.has(m[1])){
+      const cod=numbers.get(m[1]);
+      if(!found.has(cod)) found.set(cod,[]);
+      found.get(cod).push({name,handle:h,level});
+      log(`[OK] ${cod} -> ${name}`);
+      // Igual que el Python original: una carpeta encontrada no se explora por dentro.
+    }else if(level < maxDepth){
+      nextQueue.push({name,handle:h,level:level+1});
+    }
+  }
+  return revisadas;
+}
+
+async function scanAll(root,regex,numbers,maxDepth){
+  const found=new Map();
+  let queue=[{name:root.name,handle:root,level:0}];
+  let revisadasTotal=0;
+  let nivel=0;
+  const inicio=performance.now();
+  while(queue.length && !stop && nivel<=maxDepth){
+    const next=[];
+    let revisadasNivel=0;
+    // Se procesan directorios del mismo nivel y se prepara el siguiente nivel.
+    // No se vuelve a recorrer desde la raíz, a diferencia de la versión anterior.
+    for(const item of queue){
+      if(stop) break;
+      const n=await scanLevel(item.handle,item.level,regex,numbers,found,next);
+      revisadasNivel+=n;
+      if(found.size===numbers.size) break;
+    }
+    revisadasTotal+=revisadasNivel;
+    const segundos=((performance.now()-inicio)/1000).toFixed(1);
+    log(`Nivel ${nivel}: ${revisadasNivel} carpetas revisadas | acumulado ${revisadasTotal} | ${found.size}/${numbers.size} encontradas | ${segundos}s`);
+    status.textContent=`Nivel ${nivel}: ${revisadasTotal} carpetas revisadas, ${found.size}/${numbers.size} encontradas.`;
+    bar.style.width=Math.min(100,((nivel+1)/(maxDepth+1))*100)+'%';
+    if(found.size===numbers.size || stop) break;
+    queue=next; nivel++;
+  }
+  return {found,revisadasTotal};
+}
+
+const runBtn=$('run'), cancelBtn=$('cancel'), bar=$('bar'), status=$('status'), dry=$('dry');
+runBtn.onclick=async()=>{
+  busy=true; stop=false; update(); cancelBtn.disabled=false;
+  $('log').textContent='';
+  let err=0,copied=0;
+  try{
+    const pref=$('prefix').value.trim();
+    if(!/^[A-Za-z0-9]+$/.test(pref)) throw new Error('El prefijo solo puede contener letras y números.');
+    const regex=pattern(pref);
+    const cells=csvCells(await $('csv').files[0].text());
+    const nums=new Set();
+    for(const c of cells){
+      let ms=[...c.matchAll(new RegExp(regex.source,'gi'))].map(m=>m[1]);
+      if(!ms.length && /^\d{5,}$/.test(c.trim())) ms=[c.trim()];
+      ms.forEach(n=>nums.add(n));
+    }
+    const codes=[...nums].map(n=>`${pref}-${n}`);
+    if(!codes.length) throw new Error('El CSV no contiene códigos compatibles con el prefijo indicado.');
+    const numberMap=new Map(codes.map(c=>[c.replace(/\D/g,''),c]));
+    const maxDepth=Math.max(0,Math.min(30,Number($('depth').value)||0));
+    log(`Códigos únicos: ${codes.length}`);
+    log(`Profundidad máxima: ${maxDepth}`);
+    log('Iniciando búsqueda optimizada…');
+    const result=await scanAll(source,regex,numberMap,maxDepth);
+    const found=result.found;
+    if(!dry.checked && found.size){
+      await copyResults(found);
+      copied=lastCopied;
+      err=lastErrors;
+    }
+    const missing=codes.filter(c=>!found.has(c));
+    log(`\nResumen: ${found.size}/${codes.length} códigos encontrados | carpetas copiadas: ${copied} | errores: ${err}`);
+    if(missing.length) log('No encontradas: '+missing.join(', '));
+    const repeated=[...found.entries()].filter(([,v])=>v.length>1).map(([c,v])=>`${c} (${v.length} lugares)`);
+    if(repeated.length) log('Aparecen en varios lugares: '+repeated.join(', '));
+    bar.style.width='100%'; status.textContent=stop?'Proceso detenido.':'Proceso terminado.';
+  }catch(e){
+    log('[ERROR] '+e.message); status.textContent='Error';
+  }finally{busy=false;cancelBtn.disabled=true;update();}
+};
+
+let lastCopied=0,lastErrors=0;
+async function copyResults(found){
+  lastCopied=0; lastErrors=0;
+  const destRoot=dest;
+  let total=[...found.values()].reduce((a,v)=>a+v.length,0), done=0;
+  for(const [code,items] of found){
+    for(let i=0;i<items.length;i++){
+      if(stop) return;
+      const item=items[i];
+      const name=items.length>1?`${item.name}_${i+1}`:item.name;
+      try{
+        const target=await destRoot.getDirectoryHandle(name,{create:true});
+        await copyTree(item.handle,target);
+        lastCopied++; done++;
+        log(`[COPIADA] ${code} -> ${name}`);
+      }catch(e){lastErrors++;log(`[ERROR] ${code}: ${e.message}`)}
+      bar.style.width=(100*done/Math.max(1,total))+'%';
+    }
+  }
+}
+
+if(!supported()) status.textContent='Abre Medmax mediante HTTPS en Chrome o Edge actualizado.';
 </script></body></html>

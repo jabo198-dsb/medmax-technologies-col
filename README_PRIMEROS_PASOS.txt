@@ -114,3 +114,14 @@ La versión web no ejecuta Python dentro de GitHub Pages. Convierte la operació
 de archivos a JavaScript en el navegador. Si una herramienta futura depende de
 librerías Python que no puedan trasladarse al navegador, se evaluará una
 arquitectura con backend.
+
+
+---------------------------------------------
+ACTUALIZACION V1.2 - BUSQUEDA OPTIMIZADA
+---------------------------------------------
+Global ya no vuelve a recorrer la raiz para cada nivel. Explora el arbol una sola vez
+por niveles, detiene la exploracion de una carpeta cuando ya fue identificada como
+factura (igual que el Python original), muestra avance real y conserva modo de prueba.
+Comfenalco incorpora avance por subcarpeta y mejor registro de progreso.
+
+IMPORTANTE: pruebe primero Global con "Solo listar coincidencias; no copiar".
