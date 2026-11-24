@@ -143,3 +143,25 @@ PRUEBA RECOMENDADA:
 - Modo de prueba: ACTIVADO
 
 Primero verificar las coincidencias sin copiar.
+
+---------------------------------------------
+V2.0 - OPTIMIZACION DE HERRAMIENTAS
+---------------------------------------------
+GLOBAL:
+- Un solo recorrido del árbol, sin reiniciar la búsqueda por nivel.
+- Solo compara nombres de carpetas.
+- No desciende dentro de una carpeta que ya coincide.
+- Continúa si una carpeta no puede leerse.
+- Contador de carpetas revisadas, coincidencias, errores y tiempo.
+- Mantiene profundidad máxima, prefijo, CSV y modo de prueba.
+
+COMFENALCO:
+- Revisa subcarpetas inmediatas una sola vez.
+- Continúa ante errores individuales.
+- Mantiene el primer XML alfabético como nombre del ZIP.
+- Mantiene compresión recursiva del contenido.
+
+PRUEBA:
+Global: seleccionar la carpeta que realmente contiene las facturas, no C:\ o D:\.
+Activar "Solo listar coincidencias; no copiar".
+Después de validar los resultados, desactivar el modo de prueba para copiar.
